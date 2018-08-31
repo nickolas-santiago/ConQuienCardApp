@@ -1,5 +1,8 @@
 "use strict";
 var app = app || {};
+var game_canvas;
+var game_canvas_context;
+var mouse_pos;
 
 window.onload = function()
 {
@@ -8,5 +11,15 @@ window.onload = function()
     {
         players.push(new app.Player_());
     }
-    app.Game_Main.init(players);
+    game_canvas = document.querySelector('#game_canvas');
+    game_canvas_context = game_canvas.getContext('2d');
+    function getMouse(game_canvas, evt)
+    {
+        var canvas_bounding_box = game_canvas.getBoundingClientRect();
+        return {
+            x: evt.clientX - canvas_bounding_box.left,
+            y: evt.clientY - canvas_bounding_box.top
+        };
+    }
+    app.Game_Main.init(players, game_canvas, game_canvas_context, getMouse);
 }
