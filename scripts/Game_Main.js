@@ -5,6 +5,8 @@ app.Game_Main = {
     //---PROPERTIES----//
     game_deck: [],
     players: undefined,
+    current_game_state: undefined,
+    game_states: ["the_donation_round", "pluck"],
     //---canvas properties
     game_canvas: undefined,
     game_canvas_context: undefined,
@@ -67,7 +69,8 @@ app.Game_Main = {
         console.log(this.game_deck);
         console.log(this.players[0].hand);
         console.log(this.players[1].hand);
-        this.renderPlayerCards(this.players);
+        this.current_game_state = this.game_states[0];
+        this.update();
     },
     
     
@@ -79,12 +82,12 @@ app.Game_Main = {
         var card_width = 60;
         var card_height = 75;
         
-        for(var player = 0; player < players_.length; player++)
+        for(var player = 0; player < this.players.length; player++)
         {
             for(var card = 0; card < players_[player].hand.length; card++)
             {
-                var card_segment = (game_board_width/players_[player].hand.length);
-                var card_xpos = ((game_board_border/2) + ((game_board_width/players_[player].hand.length) * card) + (card_segment/2) - (card_width/2));
+                var card_segment = (game_board_width/this.players[player].hand.length);
+                var card_xpos = ((game_board_border/2) + ((game_board_width/this.players[player].hand.length) * card) + (card_segment/2) - (card_width/2));
                 var card_ypos;
                 if(player == 0)
                 {
@@ -96,9 +99,9 @@ app.Game_Main = {
                 }
                 var new_card_pos = {};
                 
-                game_canvas_context.rect(card_xpos, card_ypos, card_width, card_height);
+                game_canvas_context.strokeStyle = "rgba(0,0,0,1)";
                 game_canvas_context.strokeWidth = "6";
-                game_canvas_context.stroke();
+                game_canvas_context.strokeRect(card_xpos, card_ypos, card_width, card_height);
                 //--give each card a position reference
                 this.players[player].hand[card].xpos = card_xpos;
                 this.players[player].hand[card].ypos = card_ypos;
@@ -120,10 +123,63 @@ app.Game_Main = {
                     if((mouse_pos.x >= self.players[player].hand[card].xpos) && (mouse_pos.x <= (self.players[player].hand[card].xpos + 60))
                         && ((mouse_pos.y >= self.players[player].hand[card].ypos) && (mouse_pos.y <= (self.players[player].hand[card].ypos + 75))))
                     {
-                        console.log(self.players[player].hand[card]);
+                        //console.log(self.players[player].hand[card]);
+                        console.log(player);
+                        //console.log(card);
+                        if(self.players[player].is_donating == true)
+                        {
+                            var next_player = (player + 1);
+                            if(next_player >= self.players.length)
+                            {
+                                next_player = 0;
+                            }
+                            self.players[next_player].card_queue.push(self.players[player].hand[card]);
+                            self.players[player].hand.splice(card, 1);
+                            self.players[player].is_donating = false;
+                        }
                     }
                 }
-            }            
+            }
         }, false);
+    },
+    
+    endDonationRound: function()
+    {
+        for(var player = 0; player < this.players.length; player++)
+        {
+            for(var card = 0; card < this.players[player].card_queue.length; card++)
+            {
+                this.players[player].hand.push(this.players[player].card_queue[card]);
+                this.players[player].card_queue.splice(card,1);
+            }
+        }
+        this.current_game_state = this.game_states[1];
+    },
+    
+    update: function()
+    {
+        this.animationID = requestAnimationFrame(this.update.bind(this));
+        game_canvas_context.fillStyle = "white";
+        game_canvas_context.fillRect(0, 0, game_canvas.width, game_canvas.height);
+        game_canvas_context.fillStyle = "rgba(127, 127, 127, 0.5)";
+        game_canvas_context.fillRect(0, 0, game_canvas.width, game_canvas.height);
+        this.renderPlayerCards(this.players);
+        if(this.current_game_state == "the_donation_round")
+        {
+            //---if the current state is the "donation round" but everyone has already donated
+            //   their single card, the state can be changed
+            var donation_count = 0;
+            for(var player = 0; player < this.players.length; player++)
+            {
+                if(this.players[player].is_donating == false)
+                {
+                    donation_count++
+                }
+            }
+            if(donation_count >= this.players.length)
+            {
+                this.endDonationRound();
+            }
+        }
     }
 };

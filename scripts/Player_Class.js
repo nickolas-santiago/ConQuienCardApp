@@ -7,7 +7,8 @@ app.Player_ = function()
     {
         this.hand = [];
         this.active_melds = [];
+        this.card_queue = [];
+        this.is_donating = true;
     }
-    var player_prototype = Player_.prototype;
     return Player_;
 }();
