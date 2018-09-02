@@ -3,15 +3,20 @@ var app = app||{};
 
 app.Game_Main = {
     //---PROPERTIES----//
-    game_deck: [],
     players: undefined,
+    game_deck: [],
+    discard_pile: [],
     current_game_state: undefined,
-    game_states: ["the_donation_round", "pluck"],
+    game_states: ["the_donation_round", "pluck", "meld_or_discard", "game_over"],
+    current_pluck: undefined,
+    current_decision: undefined,
+    game_board_deck: {},
+    discard_button: {},
     //---canvas properties
     game_canvas: undefined,
     game_canvas_context: undefined,
     game_canvas_width: 700,
-    game_canvas_height: 500,
+    game_canvas_height: 500,    
     
     
     //---METHODS---//
@@ -27,7 +32,7 @@ app.Game_Main = {
         var temp_deck = [];
         var build_deck = function()
         {
-            var suits = ["a", "b", "c", "d"];
+            var suits = ["bastos", "oros", "copas", "espadas"];
             for(var suit = 0; suit < suits.length; suit++)
             {
                 for(var val = 0; val < 10; val++)
@@ -99,15 +104,105 @@ app.Game_Main = {
                 }
                 var new_card_pos = {};
                 
-                game_canvas_context.strokeStyle = "rgba(0,0,0,1)";
-                game_canvas_context.strokeWidth = "6";
-                game_canvas_context.strokeRect(card_xpos, card_ypos, card_width, card_height);
                 //--give each card a position reference
                 this.players[player].hand[card].xpos = card_xpos;
                 this.players[player].hand[card].ypos = card_ypos;
+                //---render the card
+                game_canvas_context.strokeStyle = "rgba(0,0,0,1)";
+                game_canvas_context.strokeWidth = "6";
+                game_canvas_context.strokeRect(card_xpos, card_ypos, card_width, card_height);
+                //---render some card features (like suit and value)
+                //---for the time, the suits will be represented by a colored circle
+                if(this.players[player].hand[card].suit == "bastos")
+                {
+                    game_canvas_context.fillStyle = "rgba(132,100,53,0.35)";
+                }
+                else if(this.players[player].hand[card].suit == "oros")
+                {
+                    game_canvas_context.fillStyle = "rgba(249,249,107,0.35)";
+                }
+                else if(this.players[player].hand[card].suit == "copas")
+                {
+                    game_canvas_context.fillStyle = "rgba(249,107,53,0.35)";
+                }
+                else if(this.players[player].hand[card].suit == "espadas")
+                {
+                    game_canvas_context.fillStyle = "rgba(225,154,222,0.35)";
+                }
+                game_canvas_context.beginPath();
+                game_canvas_context.arc((card_xpos + (card_width/2)), (card_ypos + (card_height/2)), 25, 0, (2 * Math.PI));
+                game_canvas_context.fill();
+            
+                game_canvas_context.textAlign = "center";
+                game_canvas_context.textBaseline = "middle";
+                game_canvas_context.font = "25px Montserrat";
+                game_canvas_context.fillStyle = "rgba(0, 0, 0, 1)";
+                game_canvas_context.fillText(this.players[player].hand[card].val, (card_xpos + (card_width/2)), (card_ypos + (card_height/2)));
             }
         }
+        
+        //---render deck
+        var center_xoffset = 60;
+        var game_board_deck_xpos = ((game_board_border/2) + (game_board_width/2) - (card_width/2) + center_xoffset);
+        var game_board_deck_ypos = ((game_board_border/2) + (game_board_height/2) - (card_height/2));
+        this.game_board_deck.xpos = game_board_deck_xpos;
+        this.game_board_deck.ypos = game_board_deck_ypos;
+        if(this.game_deck.length != 0)
+        {
+            game_canvas_context.fillRect(game_board_deck_xpos, game_board_deck_ypos, card_width, card_height);
+        }
+        game_canvas_context.strokeRect(((game_board_border/2) + (game_board_width/2) - (card_width/2) - center_xoffset), ((game_board_border/2) + (game_board_height/2) - (card_height/2)), card_width, card_height);
+        
+        //---render discard pile
+        if(this.discard_pile.length != 0)
+        {
+            var last_card = (this.discard_pile.length - 1);
+            if(this.discard_pile[last_card].suit == "bastos")
+            {
+                game_canvas_context.fillStyle = "rgba(132,100,53,0.35)";
+            }
+            else if(this.discard_pile[last_card].suit == "oros")
+            {
+                game_canvas_context.fillStyle = "rgba(249,249,107,0.35)";
+            }
+            else if(this.discard_pile[last_card].suit == "copas")
+            {
+                game_canvas_context.fillStyle = "rgba(249,107,53,0.35)";
+            }
+            else if(this.discard_pile[last_card].suit == "espadas")
+            {
+                game_canvas_context.fillStyle = "rgba(225,154,222,0.35)";
+            }
+            game_canvas_context.beginPath();
+            game_canvas_context.arc(((game_board_border/2) + (game_board_width/2) - center_xoffset), ((game_board_border/2) + (game_board_height/2)), 25, 0, (2 * Math.PI));
+            game_canvas_context.fill();
+            game_canvas_context.textAlign = "center";
+            game_canvas_context.textBaseline = "middle";
+            game_canvas_context.font = "25px Montserrat";
+            game_canvas_context.fillStyle = "rgba(0, 0, 0, 1)";
+            game_canvas_context.fillText(this.discard_pile[last_card].val, ((game_board_border/2) + (game_board_width/2) - center_xoffset), ((game_board_border/2) + (game_board_height/2)));
+        }
+        
+        //---render decision buttons
+        if(this.current_game_state == this.game_states[2])
+        {
+            var button_width = 90;
+            var button_height = 20;
+            var button_xpos = ((game_board_border/2) + (game_board_width/2) - (button_width/2) - center_xoffset);
+            var discard_button_ypos = ((game_board_border/2) + (game_board_height/2) + ((card_height) - 10));
+            
+            this.discard_button.xpos = button_xpos;
+            this.discard_button.ypos = discard_button_ypos;
+            game_canvas_context.font = "16px Montserrat";
+            //---meld
+            game_canvas_context.strokeRect(button_xpos, ((game_board_border/2) + (game_board_height/2) - ((card_height) + 0)), button_width, button_height);
+            game_canvas_context.fillText("MELD", (button_xpos + (button_width/2)), ((game_board_border/2) + (game_board_height/2) - ((card_height) - 10)));
+            //---discard
+            game_canvas_context.strokeRect(button_xpos, discard_button_ypos, button_width, button_height);
+            game_canvas_context.fillText("DISCARD", (button_xpos + (button_width/2)), (discard_button_ypos + (button_height/2)));
+        }
     },
+    
     
     initEventListeners: function(game_canvas_, getMouse_)
     {
@@ -140,6 +235,45 @@ app.Game_Main = {
                     }
                 }
             }
+            
+            //---for pluck
+            if((self.current_game_state == self.game_states[1]) && (self.game_deck.length != 0))
+            {
+                if((mouse_pos.x >= self.game_board_deck.xpos) && (mouse_pos.x <= (self.game_board_deck.xpos + 60))
+                    && ((mouse_pos.y >= self.game_board_deck.ypos) && (mouse_pos.y <= (self.game_board_deck.ypos + 75))))
+                {
+                    var last_deck_card = (self.game_deck.length - 1);
+                    self.discard_pile.push(self.game_deck[last_deck_card]);
+                    self.game_deck.pop();
+                    self.current_game_state = self.game_states[2];
+                    self.current_decision = self.current_pluck;
+                }
+            }
+            
+            //---for player choice
+            if(self.current_game_state == self.game_states[2])
+            {
+                if((mouse_pos.x >= self.discard_button.xpos) && (mouse_pos.x <= (self.discard_button.xpos + 90))
+                    && ((mouse_pos.y >= self.discard_button.ypos) && (mouse_pos.y <= (self.discard_button.ypos + 20))))
+                {
+                    console.log("Player " + self.current_decision + " has discarded.");
+                    self.current_decision++;
+                    if(self.current_decision>= self.players.length)
+                    {
+                        self.current_decision = 0;
+                    }
+                    if(self.current_decision == self.current_pluck)
+                    {
+                        self.current_game_state = self.game_states[1];
+                        self.current_pluck++;
+                        if(self.current_pluck >= self.players.length)
+                        {
+                            self.current_pluck = 0;
+                        }
+                        console.log("Player " + self.current_pluck + "'s turn");
+                    }
+                }    
+            }
         }, false);
     },
     
@@ -154,6 +288,7 @@ app.Game_Main = {
             }
         }
         this.current_game_state = this.game_states[1];
+        this.current_pluck = 0;
     },
     
     update: function()
