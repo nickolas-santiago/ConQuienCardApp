@@ -17,8 +17,11 @@ app.Game_Main = {
     //---canvas properties
     game_canvas: undefined,
     game_canvas_context: undefined,
-    game_canvas_width: 700,
-    game_canvas_height: 500,    
+    game_canvas_width: 680,
+    game_canvas_height: 700,
+    
+    chosen_card: [],
+    
     
     //---METHODS---//
     init: function(players_, game_canvas_, game_canvas_context_, getMouse_)
@@ -88,6 +91,15 @@ app.Game_Main = {
         var card_width = 60;
         var card_height = 75;
         
+        //**/////////////
+        game_canvas_context.fillStyle = "rgba(188, 245, 255, 1)";
+        game_canvas_context.fillRect(0, 0, this.game_canvas_width, this.game_canvas_height);
+        game_canvas_context.fillStyle = "white";
+        game_canvas_context.fillRect((game_board_border/2), (game_board_border/2), game_board_width, game_board_height);
+        game_canvas_context.fillStyle = "rgba(127, 127, 127, 0.5)";
+        game_canvas_context.fillRect((game_board_border/2), (game_board_border/2), game_board_width, game_board_height);
+        //**/////////////
+        
         var center_xoffset = 60;
         var game_board_deck_xpos = ((game_board_border/2) + (game_board_width/2) - (card_width/2) + center_xoffset);
         var game_board_deck_ypos = ((game_board_border/2) + (game_board_height/2) - (card_height/2));
@@ -105,6 +117,8 @@ app.Game_Main = {
         var renderCard = function(a_card, a_card_xpos, a_card_ypos)
         {
             //---render the card
+            game_canvas_context.fillStyle = "rgba(220, 220, 220, 1)";
+            game_canvas_context.fillRect(a_card_xpos, a_card_ypos, card_width, card_height);
             game_canvas_context.strokeStyle = "rgba(0,0,0,1)";
             game_canvas_context.strokeWidth = "6";
             game_canvas_context.strokeRect(a_card_xpos, a_card_ypos, card_width, card_height);
@@ -112,19 +126,19 @@ app.Game_Main = {
             //---for the time, the suits will be represented by a colored circle
             if(a_card.suit == "bastos")
             {
-                game_canvas_context.fillStyle = "rgba(132,100,53,0.35)";
+                game_canvas_context.fillStyle = "rgba(132,100,53,0.45)";
             }
             else if(a_card.suit == "oros")
             {
-                game_canvas_context.fillStyle = "rgba(249,249,107,0.35)";
+                game_canvas_context.fillStyle = "rgba(249,249,107,0.45)";
             }
             else if(a_card.suit == "copas")
             {
-                game_canvas_context.fillStyle = "rgba(249,107,53,0.35)";
+                game_canvas_context.fillStyle = "rgba(249,107,53,0.45)";
             }
             else if(a_card.suit == "espadas")
             {
-                game_canvas_context.fillStyle = "rgba(225,154,222,0.35)";
+                game_canvas_context.fillStyle = "rgba(225,154,222,0.45)";
             }
             game_canvas_context.beginPath();
             game_canvas_context.arc((a_card_xpos + (card_width/2)), (a_card_ypos + (card_height/2)), 25, 0, (2 * Math.PI));
@@ -144,10 +158,11 @@ app.Game_Main = {
             game_canvas_context.fillText(button_text, (button_xpos + (button_width/2)), (button_ypos + (button_height/2)));
         };
         
-        //---set up each player's hand
+        //---render each player's side
         for(var player = 0; player < this.players.length; player++)
         {
-            for(var card = 0; card < players_[player].hand.length; card++)
+            //---render the hand
+            for(var card = 0; card < this.players[player].hand.length; card++)
             {
                 var card_segment = (game_board_width/this.players[player].hand.length);
                 var card_xpos = ((game_board_border/2) + ((game_board_width/this.players[player].hand.length) * card) + (card_segment/2) - (card_width/2));
@@ -166,6 +181,25 @@ app.Game_Main = {
                 this.players[player].hand[card].ypos = card_ypos;
                 renderCard(this.players[player].hand[card], (card_xpos), (card_ypos));
             }
+            //---render the active melds
+            for(var meld = 0; meld < this.players[player].active_melds.length; meld++)
+            {
+                var meld_xpos = ((game_board_border/2) + ((game_board_width/3) * meld));
+                var meld_ypos = 0;
+                if(player == 0)
+                {
+                    meld_ypos = (game_board_border/2) + 100;
+                }
+                else if(player == 1)
+                {
+                    meld_ypos = ((game_board_border/2) + game_board_height - card_height - 100);
+                }
+                for(card = 0; card < this.players[player].active_melds[meld].length; card++)
+                {
+                    //game_canvas_context.fillRect((meld_xpos + ((card_width/2) * card)), meld_ypos, 60, 75);
+                    renderCard(this.players[player].active_melds[meld][card], (meld_xpos + ((card_width/2) * card)), meld_ypos);
+                }
+            }
         }
         //---render the deck
         if(this.game_deck.length != 0)
@@ -182,13 +216,18 @@ app.Game_Main = {
         if(this.current_game_state == this.game_states[2])
         {
             renderUIButton("MELD", button_xpos, this.decision_button_top.ypos);
-            renderUIButton("DISCARD", button_xpos, this.decision_button_bottom.ypos);
+            renderUIButton("OVERLOOK", button_xpos, this.decision_button_bottom.ypos);
         }
         //---render melding mode buttons
         if(this.current_game_state == this.game_states[3])
         {
             renderUIButton("MELD", button_xpos, this.decision_button_top.ypos);
             renderUIButton("CANCEL", button_xpos, this.decision_button_bottom.ypos);
+        }
+        if(this.current_game_state == this.game_states[4])
+        {
+            renderUIButton("MELD", button_xpos, this.decision_button_top.ypos);
+            renderUIButton("DISCARD", button_xpos, this.decision_button_bottom.ypos);
         }
     },
     
@@ -291,8 +330,8 @@ app.Game_Main = {
                                 self.players[self.current_decision].hand.splice(player_card, 1);
                             }
                         }
-                        self.discard_pile.pop();
                     }
+                    self.discard_pile.pop();
                     self.players[self.current_decision].active_melds.push(completed_meld);
                     self.potential_meld.splice(0, self.potential_meld.length);
                     self.current_game_state = self.game_states[4];
@@ -379,21 +418,48 @@ app.Game_Main = {
             //---for discard
             else if(self.current_game_state == self.game_states[4])
             {
+                var chosen_card = [];
                 for(var card = 0; card < self.players[self.current_decision].hand.length; card++)
                 {
                     if((mouse_pos.x >= self.players[self.current_decision].hand[card].xpos) && (mouse_pos.x <= (self.players[self.current_decision].hand[card].xpos + 60))
                         && ((mouse_pos.y >= self.players[self.current_decision].hand[card].ypos) && (mouse_pos.y <= (self.players[self.current_decision].hand[card].ypos + 75))))
                     {
-                        self.discard_pile.push(self.players[self.current_decision].hand[card]);
-                        self.players[self.current_decision].hand.splice(card,1);
-                        self.current_game_state = self.game_states[1];
-                        self.current_pluck++;
-                        if(self.current_pluck >= self.players.length)
-                        {
-                            self.current_pluck = 0;
-                        }
+                        self.chosen_card.splice(0, 1, self.players[self.current_decision].hand[card]);
                     }                    
                 }
+                    
+                    if((mouse_pos.x >= self.decision_button_top.xpos) && (mouse_pos.x <= (self.decision_button_top.xpos + 90))
+                        && ((mouse_pos.y >= self.decision_button_top.ypos) && (mouse_pos.y <= (self.decision_button_top.ypos + 20))))
+                    {
+                        if(self.chosen_card.length != 0)
+                        {
+                            console.log("Player " + self.current_decision + " has decided to meld.");
+                            self.current_game_state = self.game_states[3];
+                            self.potential_meld.push(self.chosen_card[0]);
+                            console.log(self.potential_meld);
+                        }
+                    }
+                    if((mouse_pos.x >= self.decision_button_bottom.xpos) && (mouse_pos.x <= (self.decision_button_bottom.xpos + 90))
+                        && ((mouse_pos.y >= self.decision_button_bottom.ypos) && (mouse_pos.y <= (self.decision_button_bottom.ypos + 20))))
+                    {
+                        if(self.chosen_card.length != 0)
+                        {
+                            self.discard_pile.push(self.chosen_card[0]);
+                            for(var card = 0; card < self.players[self.current_decision].hand.length; card++)
+                            {
+                                if(self.players[self.current_decision].hand[card] == self.chosen_card[0])
+                                {
+                                    self.players[self.current_decision].hand.splice(card,1);
+                                }
+                            }
+                            self.current_game_state = self.game_states[1];
+                            self.current_pluck++;
+                            if(self.current_pluck >= self.players.length)
+                            {
+                                self.current_pluck = 0;
+                            }
+                        }
+                    }
             }
         }, false);
     },
@@ -415,10 +481,6 @@ app.Game_Main = {
     update: function()
     {
         this.animationID = requestAnimationFrame(this.update.bind(this));
-        game_canvas_context.fillStyle = "white";
-        game_canvas_context.fillRect(0, 0, game_canvas.width, game_canvas.height);
-        game_canvas_context.fillStyle = "rgba(127, 127, 127, 0.5)";
-        game_canvas_context.fillRect(0, 0, game_canvas.width, game_canvas.height);
         this.renderGameBoard(this.players);
         if(this.current_game_state == "the_donation_round")
         {
@@ -437,7 +499,6 @@ app.Game_Main = {
                 this.endDonationRound();
             }
         }
-        
         //---check to see if anyone has won at least 9 active cards
         for(var player = 0; player < this.players.length; player++)
         {
