@@ -194,9 +194,11 @@ app.Game_Main = {
                 {
                     meld_ypos = ((game_board_border/2) + game_board_height - card_height - 100);
                 }
+                this.players[player].active_melds[meld].xpos = meld_xpos;
+                this.players[player].active_melds[meld].ypos = meld_ypos;
                 for(card = 0; card < this.players[player].active_melds[meld].length; card++)
                 {
-                    //game_canvas_context.fillRect((meld_xpos + ((card_width/2) * card)), meld_ypos, 60, 75);
+                    //game_canvas_context.fillRect((meld_xpos + ((card_width/2) * card)), meld_ypos, 60, 75);                    
                     renderCard(this.players[player].active_melds[meld][card], (meld_xpos + ((card_width/2) * card)), meld_ypos);
                 }
             }
@@ -393,7 +395,16 @@ app.Game_Main = {
                     && ((mouse_pos.y >= self.decision_button_bottom.ypos) && (mouse_pos.y <= (self.decision_button_bottom.ypos + 20))))
                 {
                     console.log("Player " + self.current_decision + " has canceled a meld.");
-                    self.current_game_state = self.game_states[2];
+                    if(self.potential_meld[0] == self.discard_pile[(self.discard_pile.length - 1)])
+                    {
+                        console.log("the potential card is the last discard card");
+                        self.current_game_state = self.game_states[2];
+                    }
+                    else if(self.potential_meld[0] == self.chosen_card[0])
+                    {
+                        console.log("now the potential card is a player's card");
+                        self.current_game_state = self.game_states[4];
+                    }
                     self.potential_meld.splice(0, self.potential_meld.length);
                     console.log(self.potential_meld);
                 }
@@ -412,6 +423,22 @@ app.Game_Main = {
                         }
                         self.potential_meld.push(self.players[self.current_decision].hand[card]);
                     }                    
+                }
+                
+                for(var player = 0; player < self.players.length; player++)
+                {
+                    for(var meld = 0; meld < self.players[player].active_melds.length; meld++)
+                    {
+                        if((mouse_pos.x >= self.players[player].active_melds[meld].xpos) && (mouse_pos.x <= (self.players[player].active_melds[meld].xpos + ((60/2) * (self.players[player].active_melds[meld].length - 1) + 60)))
+                            && (mouse_pos.y >= self.players[player].active_melds[meld].ypos) && (mouse_pos.y <= (self.players[player].active_melds[meld].ypos + 75)))
+                        {
+                            console.log(self.players);
+                            for(var card = 0; card < self.players[player].active_melds[meld].length; card++)
+                            {
+                                self.potential_meld.push(self.players[player].active_melds[meld][card]);                                
+                            }
+                        }
+                    }
                 }
             }
             
