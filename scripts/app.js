@@ -9,7 +9,7 @@ window.onload = function()
     var players = [];
     for(var new_player = 0; new_player < 2; new_player++)
     {
-        players.push(new app.Player_());
+        players.push(new app.Player_(new_player));
     }
     game_canvas = document.querySelector('#game_canvas');
     game_canvas_context = game_canvas.getContext('2d');
