@@ -21,6 +21,7 @@ app.Game_Main = {
     game_canvas_context: undefined,
     game_canvas_width: 680,
     game_canvas_height: 700,
+    suits: ["bastos", "oros", "copas", "espadas"],
     
     //---METHODS---//
     init: function(players_, game_canvas_, game_canvas_context_, getMouse_)
@@ -35,7 +36,7 @@ app.Game_Main = {
         var temp_deck = [];
         var build_deck = function()
         {
-            var suits = ["bastos", "oros", "copas", "espadas"];
+            var suits = self.suits;
             for(var suit = 0; suit < suits.length; suit++)
             {
                 for(var val = 0; val < 10; val++)
@@ -256,7 +257,7 @@ app.Game_Main = {
                     if(self.current_button_prompts[button_prompt].funct == "donate card")
                     {
                         console.log("hello from donate button prompt");
-                        self.players[1].donate_card();
+                        self.players[1].donateCard();
                         self.current_button_prompts.splice(0);
                     }
                     else if(self.current_button_prompts[button_prompt].funct == "overlook")
@@ -326,8 +327,8 @@ app.Game_Main = {
                     console.log(card);
                     if(self.current_game_state == self.game_states[0])
                     {
-                        self.players[1].choose_card(card);
-                        //self.players[1].donate_card();
+                        self.players[1].chooseCard(card);
+                        //self.players[1].donateCard();
                         //console.log(self.players[1].chosen_card);
                         if(self.current_button_prompts.length != 0)
                         {
@@ -342,7 +343,7 @@ app.Game_Main = {
                     }
                     else if(self.current_game_state == self.game_states[4])
                     {
-                        self.players[1].choose_card(card);
+                        self.players[1].chooseCard(card);
                         if(self.current_button_prompts.length != 0)
                         {
                             self.current_button_prompts.splice(0);
@@ -371,13 +372,13 @@ app.Game_Main = {
     
     endDonationRound: function()
     {
-        /*
+        
         for(var player = 0; player < this.players.length; player++)
         {
             this.players[player].hand.push(this.players[player].card_queue);
             this.players[player].card_queue = undefined;
         }
-        */
+        
         this.current_game_state = this.game_states[1];
         this.current_pluck = 0;
     },
@@ -529,10 +530,41 @@ app.Game_Main = {
         checkSameVal();
     },
     
+    
+    run_computer_player: function(comp_)
+    {
+        if((this.current_game_state == this.game_states[0]) && (comp_.is_donating == true))
+        {
+            comp_.findAllCurrentPotentialMelds(this.suits);
+            comp_.chooseCard(comp_.findLeastUsedCard());
+            comp_.donateCard();
+        }
+        else if((this.current_game_state == this.game_states[1]) && (this.current_pluck == comp_.player_position))
+        {
+            comp_.pluck(this.game_deck);
+        }
+        else if((this.current_game_state == this.game_states[2]) && (this.current_decision == comp_.player_position))
+        {
+            console.log("comp overlooked");
+            comp_.overlook(this.current_pluck, this.current_decision, this.current_discard, this.players.length);            
+            this.initButtonPrompts("init meld", this.game_board_discard_pile.xpos + (60/2) - (90/2), (this.game_board_discard_pile.ypos - 20 - 10), "MELD");
+            this.initButtonPrompts("overlook", this.game_board_discard_pile.xpos + (60/2) - (90/2), (this.game_board_discard_pile.ypos + 75 + 10), "OVERLOOK");
+        }
+    },
+    
     update: function()
     {
         this.animationID = requestAnimationFrame(this.update.bind(this));
         this.renderGameBoard(this.players);
+        
+        for(var player = 0; player < this.players.length; player++)
+        {
+            if(player == 0)
+            {
+                this.run_computer_player(this.players[player]);
+            }
+        }
+        
         if(this.current_game_state == "the_donation_round")
         {
             //---if the current state is the "donation round" but everyone has already donated

@@ -11,15 +11,20 @@ app.Player_ = function()
         this.active_melds = [];
         this.card_queue = undefined;
         this.chosen_card = undefined;
-        this.is_donating = false;
+        this.is_donating = true;
+        if(this.player_position == 0)
+        {
+            this.current_possible_melds = [];
+            this.current_complete_melds = [];
+        }
     }
     var me_prototype = Player_.prototype;
     
-    me_prototype.choose_card = function(card)
+    me_prototype.chooseCard = function(card_)
     {
-        this.chosen_card = card;
+        this.chosen_card = card_;
     };
-    me_prototype.donate_card = function()
+    me_prototype.donateCard = function()
     {
         var next_player = (this.player_position + 1);
         if(next_player >= app.Game_Main.players.length)
@@ -28,7 +33,7 @@ app.Player_ = function()
         }
         app.Game_Main.players[next_player].card_queue = this.hand[this.chosen_card];
         this.hand.splice(this.chosen_card,1);
-        this.choose_card = undefined;
+        this.chosen_card = undefined;
         this.is_donating = false;
     };
     me_prototype.pluck = function(game_deck)
@@ -161,6 +166,152 @@ app.Player_ = function()
             app.Game_Main.current_decision = 0;
         }
         app.Game_Main.current_game_state = app.Game_Main.game_states[2];
+    };
+    
+    //---mwthods for a computer player
+    me_prototype.findAllCurrentPotentialMelds = function(suits_)
+    {
+        var temp_potential_melds_array = [];
+        for(var primary_card = 0; primary_card < this.hand.length; primary_card++)
+        {
+            for(var secondary_card = (primary_card + 1); secondary_card < this.hand.length; secondary_card++)
+            {
+                if(this.hand[primary_card].val == this.hand[secondary_card].val)
+                {
+                    for(var suit = 0; suit < suits_.length; suit++)
+                    {
+                        if((this.hand[primary_card].suit != suits_[suit]) && (this.hand[secondary_card].suit != suits_[suit]))
+                        {
+                            var potential_meld = [];
+                            potential_meld.push(this.hand[primary_card]);
+                            potential_meld.push(this.hand[secondary_card]);
+                            var card = {};
+                            card.suit = suits_[suit];
+                            card.val = this.hand[primary_card].val;
+                            potential_meld.push(card);
+                            temp_potential_melds_array.push(potential_meld);
+                        }
+                    }
+                }
+                else if(this.hand[primary_card].suit == this.hand[secondary_card].suit)
+                {
+                    var suit = this.hand[primary_card].suit;
+                    var higher_card = Math.max(this.hand[primary_card].val, this.hand[secondary_card].val);
+                    var lower_card = Math.min(this.hand[primary_card].val, this.hand[secondary_card].val);
+                    if(higher_card == (lower_card + 1))
+                    {
+                        if(lower_card != 1)
+                        {
+                            var potential_meld = [];
+                            potential_meld.push(this.hand[primary_card]);
+                            potential_meld.push(this.hand[secondary_card]);
+                            var card = {};
+                            card.suit = suit;
+                            card.val = (lower_card - 1);
+                            potential_meld.push(card);
+                            temp_potential_melds_array.push(potential_meld);
+                        }
+                        if(higher_card != 10)
+                        {
+                            var potential_meld = [];
+                            potential_meld.push(this.hand[primary_card]);
+                            potential_meld.push(this.hand[secondary_card]);
+                            var card = {};
+                            card.suit = suit;
+                            card.val = (higher_card + 1);
+                            potential_meld.push(card);
+                            temp_potential_melds_array.push(potential_meld);
+                        }
+                    }
+                    else if (higher_card == (lower_card + 2))
+                    {
+                        var potential_meld = [];
+                        potential_meld.push(this.hand[primary_card]);
+                        potential_meld.push(this.hand[secondary_card]);
+                        var card = {};
+                        card.suit = suit;
+                        card.val = (lower_card + 1);
+                        potential_meld.push(card);
+                        temp_potential_melds_array.push(potential_meld);
+                    }
+                    else
+                    {
+                        continue;
+                    }
+                }
+                else
+                {
+                    continue;
+                }
+            }
+        }
+        
+        for(var current_possible_meld = 0; current_possible_meld < temp_potential_melds_array.length; current_possible_meld++)
+        {
+            temp_potential_melds_array[current_possible_meld].sort(function(a,b){return a.val - b.val});
+            temp_potential_melds_array[current_possible_meld].sort(function(a,b){return (a.suit < b.suit) ? -1 : (a.suit > b.suit) ? 1 : 0;});
+        }
+        
+        for(var current_possible_meld = 0; current_possible_meld < temp_potential_melds_array.length; current_possible_meld++)
+        {
+            if(this.current_possible_melds.length == 0)
+            {
+                this.current_possible_melds.push(temp_potential_melds_array[current_possible_meld]);
+            }
+            else
+            {
+                var meld_is_a_duplicate = false;
+                for(var current_meld = 0; current_meld < this.current_possible_melds.length; current_meld++)
+                {
+                    var self = this;
+                    var duplicate_is_true = temp_potential_melds_array[current_possible_meld].every(function(temp_potential_meld_card)
+                    {
+                        var card_is_duplicate = self.current_possible_melds[current_meld].some(function(final_potential_array_card)
+                        {
+                            return((final_potential_array_card.suit == temp_potential_meld_card.suit) && (final_potential_array_card.val == temp_potential_meld_card.val));
+                        });
+                        return card_is_duplicate;
+                    });
+                    if(duplicate_is_true == true)
+                    {
+                        meld_is_a_duplicate = true;
+                    }
+                }
+                if(meld_is_a_duplicate == false)
+                {
+                    this.current_possible_melds.push(temp_potential_melds_array[current_possible_meld]);
+                }
+            }
+        }
+    };
+    
+    me_prototype.findLeastUsedCard = function()
+    {
+        var card_usage_counter = [];
+        var lowest_uasge_times;
+        var indexes_of_lowest_used_cards = [];
+        for(var hand_card = 0; hand_card < this.hand.length; hand_card++)
+        {
+            var card_usage = 0;
+            for(var current_possible_meld = 0; current_possible_meld < this.current_possible_melds.length; current_possible_meld++)
+            {
+                if(this.current_possible_melds[current_possible_meld].includes(this.hand[hand_card]))
+                {
+                    card_usage++;
+                }
+            }
+            card_usage_counter.push(card_usage);
+        }
+        lowest_uasge_times = Math.min.apply(null,card_usage_counter);
+        for(var n = 0; n < card_usage_counter.length; n++)
+        {
+            if(card_usage_counter[n] == lowest_uasge_times)
+            {
+                indexes_of_lowest_used_cards.push(n);
+            }
+        }
+        var card_index_choice = Math.floor(Math.random()*indexes_of_lowest_used_cards.length);
+        return indexes_of_lowest_used_cards[card_index_choice];
     };
     return Player_;
 }();
