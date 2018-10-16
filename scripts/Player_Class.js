@@ -89,12 +89,15 @@ app.Player_ = function()
         if(this.chosen_card == undefined)
         {
             this.potential_meld.push(app.Game_Main.discard_pile[(app.Game_Main.discard_pile.length - 1)]);
+            this.chosen_card = this.potential_meld[0];
         }
         else
         {
             this.potential_meld.push(this.hand[this.chosen_card]);
         }
-        this.chosen_card = this.potential_meld[0];
+        //
+        console.log(this.chosen_card);
+        console.log(this.potential_meld);
     };
     me_prototype.addCardToMeld = function(card_)
     {
@@ -172,6 +175,7 @@ app.Player_ = function()
     me_prototype.findAllCurrentPotentialMelds = function(suits_)
     {
         var temp_potential_melds_array = [];
+        this.current_possible_melds.splice(0);
         for(var primary_card = 0; primary_card < this.hand.length; primary_card++)
         {
             for(var secondary_card = (primary_card + 1); secondary_card < this.hand.length; secondary_card++)
@@ -312,6 +316,28 @@ app.Player_ = function()
         }
         var card_index_choice = Math.floor(Math.random()*indexes_of_lowest_used_cards.length);
         return indexes_of_lowest_used_cards[card_index_choice];
+    };
+    
+    me_prototype.findAllCurrentPossibleMoves = function(discard_pile_)
+    {
+        var possible_moves = [];
+        console.log(discard_pile_[(discard_pile_.length - 1)]);
+        console.log(discard_pile_);
+        for(var meld = 0; meld < this.current_possible_melds.length; meld++)
+        {
+            var can_use_card;
+            var last_discard_card = (discard_pile_.length - 1);
+            can_use_card = this.current_possible_melds[meld].some(function(card)
+            {
+                return ((card.val == discard_pile_[last_discard_card].val) && (card.suit == discard_pile_[last_discard_card].suit));
+            });
+            console.log(can_use_card);
+            if(can_use_card == true)
+            {
+                possible_moves.push(meld);
+            }
+        }
+        return possible_moves;
     };
     return Player_;
 }();

@@ -378,6 +378,7 @@ app.Game_Main = {
             this.players[player].hand.push(this.players[player].card_queue);
             this.players[player].card_queue = undefined;
         }
+        this.players[0].findAllCurrentPotentialMelds(this.suits);
         
         this.current_game_state = this.game_states[1];
         this.current_pluck = 0;
@@ -538,6 +539,7 @@ app.Game_Main = {
             comp_.findAllCurrentPotentialMelds(this.suits);
             comp_.chooseCard(comp_.findLeastUsedCard());
             comp_.donateCard();
+            console.log(comp_.current_possible_melds);
         }
         else if((this.current_game_state == this.game_states[1]) && (this.current_pluck == comp_.player_position))
         {
@@ -545,10 +547,45 @@ app.Game_Main = {
         }
         else if((this.current_game_state == this.game_states[2]) && (this.current_decision == comp_.player_position))
         {
-            console.log("comp overlooked");
-            comp_.overlook(this.current_pluck, this.current_decision, this.current_discard, this.players.length);            
+            //---comp finds all possible moves
+            var current_possible_moves = comp_.findAllCurrentPossibleMoves(this.discard_pile);
+            if(current_possible_moves.length == 0)
+            {
+                console.log("comp overlooked");
+                comp_.overlook(this.current_pluck, this.current_decision, this.current_discard, this.players.length);
+            }
+            else
+            {
+                var comp_move = current_possible_moves[(Math.floor(Math.random() * current_possible_moves.length))];
+                comp_.initMeld();
+                for(var card = 0; card < comp_.current_possible_melds[comp_move].length; card++)
+                {
+                    var card_already_in_comp_potential_meld = comp_.potential_meld.some(function(potential_meld_card)
+                    {
+                        return((potential_meld_card.val == comp_.current_possible_melds[comp_move][card].val) && (potential_meld_card.suit == comp_.current_possible_melds[comp_move][card].suit));
+                    });
+                    if(card_already_in_comp_potential_meld == false)
+                    {
+                        var hand_card_index = comp_.hand.findIndex(function(hand_card)
+                        {
+                            return((hand_card.val == comp_.current_possible_melds[comp_move][card].val) && (hand_card.suit == comp_.current_possible_melds[comp_move][card].suit));
+                        });
+                        comp_.addCardToMeld(hand_card_index);
+                    }
+                }
+                this.checkPotentialMeld();
+            }
             this.initButtonPrompts("init meld", this.game_board_discard_pile.xpos + (60/2) - (90/2), (this.game_board_discard_pile.ypos - 20 - 10), "MELD");
             this.initButtonPrompts("overlook", this.game_board_discard_pile.xpos + (60/2) - (90/2), (this.game_board_discard_pile.ypos + 75 + 10), "OVERLOOK");
+        }
+        else if((this.current_game_state == this.game_states[4]) && (this.current_discard == comp_.player_position))
+        {
+            console.log(this.current_game_state);
+            console.log(this.current_discard);
+            comp_.findAllCurrentPotentialMelds(this.suits);
+            comp_.chooseCard(comp_.findLeastUsedCard());
+            console.log(comp_.chosen_card);
+            comp_.discardCard();
         }
     },
     
