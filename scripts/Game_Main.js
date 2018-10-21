@@ -91,8 +91,8 @@ app.Game_Main = {
             mouse_pos = getMouse_(game_canvas_, evt);
             
             //---clicking deck
-            if((mouse_pos.x >= self.game_board_deck.xpos) && (mouse_pos.x <= (self.game_board_deck.xpos + 60))
-                && ((mouse_pos.y >= self.game_board_deck.ypos) && (mouse_pos.y <= (self.game_board_deck.ypos + 75)))
+            if((mouse_pos.x >= app.Game_Board.deck_pos.x) && (mouse_pos.x <= (app.Game_Board.deck_pos.x + 60))
+                && ((mouse_pos.y >= app.Game_Board.deck_pos.y) && (mouse_pos.y <= (app.Game_Board.deck_pos.y + 75)))
                 && ((self.current_game_state == self.game_states[1]) && (self.game_deck.length != 0)))
             {
                 self.players[self.current_pluck].pluck(self.game_deck);
@@ -124,8 +124,8 @@ app.Game_Main = {
                         self.players[1].initMeld();
                         self.current_button_prompts.splice(0);
                         console.log(self.current_game_state);
-                        self.initButtonPrompts("check meld", self.game_board_discard_pile.xpos + (60/2) - (90/2), (self.game_board_discard_pile.ypos - 20 - 10), "MELD");
-                        self.initButtonPrompts("cancel meld", self.game_board_discard_pile.xpos + (60/2) - (90/2), (self.game_board_discard_pile.ypos + 75 + 10), "CANCEL");
+                        self.initButtonPrompts("check meld", app.Game_Board.discard_pos.x + (60/2) - (90/2), (self.game_board_discard_pile.ypos - 20 - 10), "MELD");
+                        self.initButtonPrompts("cancel meld", app.Game_Board.discard_pos.x + (60/2) - (90/2), (self.game_board_discard_pile.ypos + 75 + 10), "CANCEL");
                     
                     }
                     else if(self.current_button_prompts[button_prompt].funct == "check meld")
