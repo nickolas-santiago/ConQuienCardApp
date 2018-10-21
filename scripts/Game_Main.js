@@ -75,159 +75,12 @@ app.Game_Main = {
         build_deck();
         shuffle_deck();
         deal_cards();
+        app.Game_Board.initGameBoard();
         console.log(this.game_deck);
         console.log(this.players[0].hand);
         console.log(this.players[1].hand);
         this.current_game_state = this.game_states[0];
         this.update();
-    },
-    
-    renderGameBoard: function(players_)
-    {
-        //---set up the game board
-        var game_board_border = 40; 
-        var game_board_width = (this.game_canvas_width - game_board_border);
-        var game_board_height = (this.game_canvas_height - game_board_border);
-        var card_width = 60;
-        var card_height = 75;
-        
-        //**/////////////
-        game_canvas_context.fillStyle = "rgba(188, 245, 255, 1)";
-        game_canvas_context.fillRect(0, 0, this.game_canvas_width, this.game_canvas_height);
-        game_canvas_context.fillStyle = "white";
-        game_canvas_context.fillRect((game_board_border/2), (game_board_border/2), game_board_width, game_board_height);
-        game_canvas_context.fillStyle = "rgba(127, 127, 127, 0.5)";
-        game_canvas_context.fillRect((game_board_border/2), (game_board_border/2), game_board_width, game_board_height);
-        //**/////////////
-        
-        var center_xoffset = 60;
-        var game_board_deck_xpos = ((game_board_border/2) + (game_board_width/2) - (card_width/2) + center_xoffset);
-        var game_board_deck_ypos = ((game_board_border/2) + (game_board_height/2) - (card_height/2));
-        var game_board_discard_pile_xpos = ((game_board_border/2) + (game_board_width/2) - (card_width/2) - center_xoffset);
-        var game_board_discard_pile_ypos = ((game_board_border/2) + (game_board_height/2) - (card_height/2));
-        var button_xpos = ((game_board_border/2) + (game_board_width/2) - (90/2) - center_xoffset);
-        var decision_button_top_ypos = ((game_board_border/2) + (game_board_height/2) - ((card_height) + 0));
-        var decision_button_bottom_ypos = ((game_board_border/2) + (game_board_height/2) + ((card_height) - 10));
-        
-        this.game_board_deck.xpos = game_board_deck_xpos;
-        this.game_board_deck.ypos = game_board_deck_ypos;
-        this.game_board_discard_pile.xpos = game_board_discard_pile_xpos;
-        this.game_board_discard_pile.ypos = game_board_discard_pile_ypos;
-        
-        var renderCard = function(a_card, a_card_xpos, a_card_ypos)
-        {
-            //---render the card
-            game_canvas_context.fillStyle = "rgba(220, 220, 220, 1)";
-            game_canvas_context.fillRect(a_card_xpos, a_card_ypos, card_width, card_height);
-            game_canvas_context.strokeStyle = "rgba(0,0,0,1)";
-            game_canvas_context.strokeWidth = "6";
-            game_canvas_context.strokeRect(a_card_xpos, a_card_ypos, card_width, card_height);
-            //---render some card features (like suit and value)
-            //---for the time, the suits will be represented by a colored circle
-            if(a_card.suit == "bastos")
-            {
-                game_canvas_context.fillStyle = "rgba(132,100,53,0.45)";
-            }
-            else if(a_card.suit == "oros")
-            {
-                game_canvas_context.fillStyle = "rgba(249,249,107,0.45)";
-            }
-            else if(a_card.suit == "copas")
-            {
-                game_canvas_context.fillStyle = "rgba(249,107,53,0.45)";
-            }
-            else if(a_card.suit == "espadas")
-            {
-                game_canvas_context.fillStyle = "rgba(225,154,222,0.45)";
-            }
-            game_canvas_context.beginPath();
-            game_canvas_context.arc((a_card_xpos + (card_width/2)), (a_card_ypos + (card_height/2)), 25, 0, (2 * Math.PI));
-            game_canvas_context.fill();
-            game_canvas_context.textAlign = "center";
-            game_canvas_context.textBaseline = "middle";
-            game_canvas_context.font = "25px Montserrat";
-            game_canvas_context.fillStyle = "rgba(0, 0, 0, 1)";
-            game_canvas_context.fillText(a_card.val, (a_card_xpos + (card_width/2)), (a_card_ypos + (card_height/2)));            
-        };
-        
-        
-        var self = this;
-        var initUIButton = function(button_function, button_xpos, button_ypos)
-        {
-            var button = {};
-            button.button_function = button_function;
-            button.button_xpos = button_xpos;
-            button.button_ypos = button_ypos;
-            self.current_button_prompts.push(button);
-        }
-        var renderUIButton = function(button_text, button_xpos, button_ypos)
-        {
-            var button_width = 90;
-            var button_height = 20;
-            game_canvas_context.font = "16px Montserrat";
-            game_canvas_context.strokeRect(button_xpos, button_ypos, button_width, button_height);
-            game_canvas_context.fillText(button_text, (button_xpos + (button_width/2)), (button_ypos + (button_height/2)));
-        };
-        
-        //---render each player's side
-        for(var player = 0; player < this.players.length; player++)
-        {
-            //---render the hand
-            for(var card = 0; card < this.players[player].hand.length; card++)
-            {
-                var card_segment = (game_board_width/this.players[player].hand.length);
-                var card_xpos = ((game_board_border/2) + ((game_board_width/this.players[player].hand.length) * card) + (card_segment/2) - (card_width/2));
-                var card_ypos;
-                if(player == 0)
-                {
-                    card_ypos = (game_board_border/2);
-                }
-                else if(player == 1)
-                {
-                    card_ypos = ((game_board_border/2) + game_board_height - card_height);
-                }
-                renderCard(this.players[player].hand[card], (card_xpos), (card_ypos));
-            }
-            //---render the active melds
-            for(var meld = 0; meld < this.players[player].active_melds.length; meld++)
-            {
-                var meld_xpos = ((game_board_border/2) + ((game_board_width/3) * meld));
-                var meld_ypos = 0;
-                if(player == 0)
-                {
-                    meld_ypos = (game_board_border/2) + 100;
-                }
-                else if(player == 1)
-                {
-                    meld_ypos = ((game_board_border/2) + game_board_height - card_height - 100);
-                }
-                this.players[player].active_melds[meld].xpos = meld_xpos;
-                this.players[player].active_melds[meld].ypos = meld_ypos;
-                for(card = 0; card < this.players[player].active_melds[meld].length; card++)
-                {
-                    //game_canvas_context.fillRect((meld_xpos + ((card_width/2) * card)), meld_ypos, 60, 75);                    
-                    renderCard(this.players[player].active_melds[meld][card], (meld_xpos + ((card_width/2) * card)), meld_ypos);
-                }
-            }
-        }
-        //---render the deck
-        if(this.game_deck.length != 0)
-        {
-            game_canvas_context.fillRect(game_board_deck_xpos, game_board_deck_ypos, card_width, card_height);
-        }
-        //---render discard pile
-        if(this.discard_pile.length != 0)
-        {
-            var last_card = (this.discard_pile.length - 1);
-            renderCard(this.discard_pile[last_card], this.game_board_discard_pile.xpos, this.game_board_discard_pile.ypos);
-        }
-        //---render any button prompts
-        for(var button_prompt = 0; button_prompt < this.current_button_prompts.length; button_prompt++)
-        {
-            var this_button = this.current_button_prompts[button_prompt];
-            renderUIButton(this_button.text, this_button.xpos, this_button.ypos);
-        }
-        
     },
     
     initEventListeners: function(game_canvas_, getMouse_)
@@ -244,8 +97,9 @@ app.Game_Main = {
             {
                 self.players[self.current_pluck].pluck(self.game_deck);
                 console.log(self.discard_pile);
-                self.initButtonPrompts("init meld", self.game_board_discard_pile.xpos + (60/2) - (90/2), (self.game_board_discard_pile.ypos - 20 - 10), "MELD");
-                self.initButtonPrompts("overlook", self.game_board_discard_pile.xpos + (60/2) - (90/2), (self.game_board_discard_pile.ypos + 75 + 10), "OVERLOOK");
+                self.initButtonPrompts("init meld", app.Game_Board.discard_pos.x + (60/2) - (90/2), (app.Game_Board.discard_pos.y - 20 - 10), "MELD");
+                //self.initButtonPrompts("init meld", self.game_board_discard_pile.xpos + (60/2) - (90/2), (self.game_board_discard_pile.ypos - 20 - 10), "MELD");
+                self.initButtonPrompts("overlook", app.Game_Board.discard_pos.x + (60/2) - (90/2), (app.Game_Board.discard_pos.y + 75 + 10), "OVERLOOK");
             }
             
             //---clicking buttons
@@ -291,8 +145,8 @@ app.Game_Main = {
                         if(self.players[self.current_decision].chosen_card == self.discard_pile[(self.discard_pile.length - 1)])
                         {
                             self.current_game_state = self.game_states[2];
-                            self.initButtonPrompts("init meld", self.game_board_discard_pile.xpos + (60/2) - (90/2), (self.game_board_discard_pile.ypos - 20 - 10), "MELD");
-                            self.initButtonPrompts("overlook", self.game_board_discard_pile.xpos + (60/2) - (90/2), (self.game_board_discard_pile.ypos + 75 + 10), "OVERLOOK");            
+                            self.initButtonPrompts("init meld", app.Game_Board.discard_pos.x + (60/2) - (90/2), (app.Game_Board.discard_pos.y - 20 - 10), "MELD");
+                            self.initButtonPrompts("overlook", app.Game_Board.discard_pos.x + (60/2) - (90/2), (app.Game_Board.discard_pos.y + 75 + 10), "OVERLOOK");            
                         }
                         else
                         {
@@ -306,8 +160,8 @@ app.Game_Main = {
                         self.players[1].discardCard();
                         self.current_button_prompts.splice(0);
                         console.log(self.current_game_state);
-                        self.initButtonPrompts("init meld", self.game_board_discard_pile.xpos + (60/2) - (90/2), (self.game_board_discard_pile.ypos - 20 - 10), "MELD");
-                        self.initButtonPrompts("overlook", self.game_board_discard_pile.xpos + (60/2) - (90/2), (self.game_board_discard_pile.ypos + 75 + 10), "OVERLOOK");    
+                        self.initButtonPrompts("init meld", app.Game_Board.discard_pos.x + (60/2) - (90/2), (app.Game_Board.discard_pos.y - 20 - 10), "MELD");
+                        self.initButtonPrompts("overlook", app.Game_Board.discard_pos.x + (60/2) - (90/2), (app.Game_Board.discard_pos.y + 75 + 10), "OVERLOOK");    
                     }
                 }
             }
@@ -531,7 +385,6 @@ app.Game_Main = {
         checkSameVal();
     },
     
-    
     run_computer_player: function(comp_)
     {
         if((this.current_game_state == this.game_states[0]) && (comp_.is_donating == true))
@@ -575,8 +428,8 @@ app.Game_Main = {
                 }
                 this.checkPotentialMeld();
             }
-            this.initButtonPrompts("init meld", this.game_board_discard_pile.xpos + (60/2) - (90/2), (this.game_board_discard_pile.ypos - 20 - 10), "MELD");
-            this.initButtonPrompts("overlook", this.game_board_discard_pile.xpos + (60/2) - (90/2), (this.game_board_discard_pile.ypos + 75 + 10), "OVERLOOK");
+            this.initButtonPrompts("init meld", app.Game_Board.discard_pos.x + (60/2) - (90/2), (app.Game_Board.discard_pos.y - 20 - 10), "MELD");
+            this.initButtonPrompts("overlook", app.Game_Board.discard_pos.x + (60/2) - (90/2), (app.Game_Board.discard_pos.y + 75 + 10), "OVERLOOK");
         }
         else if((this.current_game_state == this.game_states[4]) && (this.current_discard == comp_.player_position))
         {
@@ -592,7 +445,8 @@ app.Game_Main = {
     update: function()
     {
         this.animationID = requestAnimationFrame(this.update.bind(this));
-        this.renderGameBoard(this.players);
+        //this.renderGameBoard(this.players);
+        app.Game_Board.renderGameBoard();
         
         for(var player = 0; player < this.players.length; player++)
         {
